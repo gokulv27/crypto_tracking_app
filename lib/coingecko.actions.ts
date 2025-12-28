@@ -22,7 +22,7 @@ export async function fetcher<T>(
 ): Promise<T> {
   const url = qs.stringifyUrl(
     {
-      url: `${BASE_URL}/${endpoint}`,
+      url: `${BASE_URL}/${endpoint.startsWith('/') ? endpoint.slice(1) : endpoint}`,
       query: params,
     },
     { skipEmptyString: true, skipNull: true }
@@ -56,11 +56,16 @@ export async function getPools(
   }
 
   if (network && contractAddress) {
-    const poolData = await fetcher<{ data: PoolData[] }>(
-      `/onchain/networks/${network}/tokens/${contractAddress}/pools`
-    )
+    try {
+      const poolData = await fetcher<{ data: PoolData[] }>(
+        `/onchain/networks/${network}/tokens/${contractAddress}/pools`
+      )
 
-    return poolData.data?.[0] ?? fallback
+      return poolData.data?.[0] ?? fallback
+    } catch (error) {
+      console.error('Failed to fetch pool data by contract:', error)
+      return fallback
+    }
   }
 
   try {
